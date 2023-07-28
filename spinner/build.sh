@@ -29,7 +29,7 @@ function build_service_database {
 	write "            - MYSQL_USER=dxpcloud"
 	write "        image: mysql:8.0.32"
 	write "        ports:"
-	write "            - ${DATABASE_PORT}:3306"
+	write "            - ${CONTAINER_PORT_IP}${DATABASE_PORT}:3306"
 	write "        volumes:"
 	write "            - ./database_import:/docker-entrypoint-initdb.d"
 	write "            - mysql-db:/var/lib/mysql"
@@ -96,7 +96,7 @@ function build_service_liferay {
 		echo "virtualHostname=\"spinner-test.com\""
 	) >> "liferay_mount/files/osgi/configs/com.liferay.portal.instances.internal.configuration.PortalInstancesConfiguration~spinner-test.com.config"
 
-	for index in $(seq 1 ${NUMBER_OF_LIFERAY_NODES})
+	for index in $(seq 1 "${NUMBER_OF_LIFERAY_NODES}")
 	do
 		local port_last_digit=$((index - 1))
 
@@ -135,10 +135,12 @@ function build_service_liferay {
 		write "            - LIFERAY_WORKSPACE_ENVIRONMENT=${LXC_ENVIRONMENT}"
 		write "            - LOCAL_STACK=true"
 		write "            - ORCA_LIFERAY_SEARCH_ADDRESSES=search:9200"
+		write "        extra_hosts:"
+		write "            - host.docker.internal:host-gateway"
 		write "        hostname: liferay-${index}"
 		write "        ports:"
-		write "            - 1800${port_last_digit}:8000"
-		write "            - 1808${port_last_digit}:8080"
+		write "            - ${CONTAINER_PORT_IP}1800${port_last_digit}:8000"
+		write "            - ${CONTAINER_PORT_IP}1808${port_last_digit}:8080"
 		write "        volumes:"
 		write "            - liferay-document-library:/opt/liferay/data"
 		write "            - ./liferay_mount:/mnt/liferay"
@@ -263,7 +265,7 @@ function build_service_web_server {
 	write_deploy_section 1G
 
 	write "        ports:"
-	write "            - ${WEB_SERVER_PORT}:80"
+	write "            - ${CONTAINER_PORT_IP}${WEB_SERVER_PORT}:80"
 	write "        volumes:"
 	write "            - ./web-server_mount:/lcp-container"
 }
@@ -288,6 +290,7 @@ function check_usage {
 	lc_check_utils docker
 
 	ANTIVIRUS_PORT=3310
+	CONTAINER_PORT_IP=127.0.0.1:
 	DATABASE_IMPORT=
 	DATABASE_PORT=13306
 	LXC_ENVIRONMENT=
@@ -300,11 +303,15 @@ function check_usage {
 			-d)
 				shift
 
-				DATABASE_IMPORT=${1}
+				DATABASE_IMPORT=$(realpath "${1}")
 
 				;;
 			-h)
 				print_help
+
+				;;
+			-l)
+				CONTAINER_PORT_IP=""
 
 				;;
 			-m)
@@ -455,7 +462,32 @@ function prepare_database_import {
 	echo ""
 	echo "Adding 10_after_import.sql to make changes to the database. Review them before starting the container."
 
-	echo "update VirtualHost SET hostname=concat(hostname, \".local\");" > 10_after_import.sql
+	(
+		echo "USE lportal;"
+		echo ""
+		echo "DELETE FROM Configuration_ WHERE configurationId LIKE 'com.liferay.portal.security.ldap.%';"
+		echo "DELETE FROM Configuration_ WHERE configurationId LIKE 'com.liferay.portal.security.sso.openid.%';"
+		echo "DELETE FROM Configuration_ WHERE configurationId LIKE 'com.liferay.saml.%';"
+		echo ""
+		echo "UPDATE VirtualHost SET hostname=concat(hostname, \".local\");"
+
+		grep "^CREATE DATABASE" 01_database.sql | sed -e 's/.*`\(.*\)`.*/\1/' | while IFS= read -r schema
+		do
+			echo "USE ${schema};"
+			echo ""
+			echo "TRUNCATE TABLE OpenIdConnectSession;"
+			echo "TRUNCATE TABLE SamlIdpSpConnection;"
+			echo "TRUNCATE TABLE SamlIdpSpSession;"
+			echo "TRUNCATE TABLE SamlIdpSsoSession;"
+			echo "TRUNCATE TABLE SamlPeerBinding;"
+			echo "TRUNCATE TABLE SamlSpAuthRequest;"
+			echo "TRUNCATE TABLE SamlSpIdpConnection;"
+			echo "TRUNCATE TABLE SamlSpMessage;"
+			echo "TRUNCATE TABLE SamlSpSession;"
+			echo ""
+			echo "UPDATE User_ set password_ ='liferaydevsecops', passwordEncrypted=0;"
+		done
+	) > 10_after_import.sql
 }
 
 function print_docker_compose_usage {
@@ -480,6 +512,7 @@ function print_help {
 	echo "The script can be configured with the following arguments:"
 	echo ""
 	echo "    -d (optional): Set the database import file (raw or with a .gz suffix). Virtual hosts will be suffixed with .local (e.g. abc.liferay.com becomes abc.liferay.com.local)."
+	echo "    -l (optional): Exported ports listen on all network interfaces"
 	echo "    -m (optional): Enable mod_security on the web server with the rules from OWASP Top 10"
 	echo "    -n (optional): Number of Liferay nodes"
 	echo "    -o (optional): Set directory name where the stack configuration will be created. It will be prefixed with \"env-\"."
