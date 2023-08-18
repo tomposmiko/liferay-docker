@@ -1,4 +1,4 @@
-FROM liferay/jdk11-jdk8
+FROM liferay/jdk11
 
 CMD ["bash"]
 
