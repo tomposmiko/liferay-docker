@@ -138,8 +138,8 @@ function check_usage {
 }
 
 function checkout_commit {
-	repository="${1}"
-	commit_hash="${2}"
+	local repository="${1}"
+	local commit_hash="${2}"
 
 	lc_cd "${BASE_DIR}/${1}"
 
