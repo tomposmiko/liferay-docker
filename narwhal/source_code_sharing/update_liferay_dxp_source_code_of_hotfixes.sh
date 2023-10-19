@@ -246,19 +246,18 @@ function get_hotfix_zip_list_file {
 	else
 		lc_log DEBUG "Generating the zip list file: '${zip_list_file}' from '${zip_directory_url}/'."
 
-		local zip_directory_name
+		if [[ "${release_version}" == 20* ]]
+		then
 
-		for zip_directory_name in $(lc_curl "${zip_directory_url}/" - | grep -E -o "20[0-9]+\.q[0-9]\.[0-9]+" | uniq)
-		do
-			lc_curl "${zip_directory_url}/${zip_directory_name}/" - | grep -E -o "liferay-dxp-20[a-z0-9\.]+-hotfix-[0-9]{0,9}.zip" | uniq |sed "s@^@${zip_directory_name}/@"
-		done > "${zip_list_file}"
+			local zip_directory_name
 
-		#if (! curl --fail --max-time "${LIFERAY_COMMON_DOWNLOAD_MAX_TIME}" --retry 10 --show-error --silent "${zip_directory_url}/" | grep -E -o "liferay-hotfix-[0-9-]+.zip" | uniq - "${zip_list_file}")
-		#	then
-		#		lc_log ERROR "The '${zip_list_file}' cannot be downloaded."
-
-		#		exit "${LIFERAY_COMMON_EXIT_CODE_BAD}"
-		#fi
+			for zip_directory_name in $(lc_curl "${zip_directory_url}/" - | grep -E -o "20[0-9]+\.q[0-9]\.[0-9]+" | uniq)
+			do
+				lc_curl "${zip_directory_url}/${zip_directory_name}/" - | grep -E -o "liferay-dxp-20[a-z0-9\.]+-hotfix-[0-9]{0,9}.zip" | uniq | sed "s@^@${zip_directory_name}/@"
+			done > "${zip_list_file}"
+		else
+			lc_curl "${zip_directory_url}/${zip_directory_name}/" - | grep -E -o "liferay-hotfix-[0-9-]+.zip" | uniq - "${zip_list_file}"
+		fi
 	fi
 }
 
