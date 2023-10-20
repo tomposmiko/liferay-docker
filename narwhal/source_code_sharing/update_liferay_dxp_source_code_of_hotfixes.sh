@@ -315,7 +315,9 @@ function process_version_list {
 
 	for release_version in "${version_list[@]}"
 	do
-		local zip_list_file="${LIFERAY_COMMON_DOWNLOAD_CACHE_DIR}/list-of-${release_version}.txt"
+		mkdir -p "${BASE_DIR}"/cache
+
+		local zip_list_file="${BASE_DIR}/cache/list-of-${release_version}.txt"
 
 		lc_log DEBUG "Processing version: ${release_version}."
 
