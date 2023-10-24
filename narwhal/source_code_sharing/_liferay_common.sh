@@ -314,6 +314,8 @@ function _lc_init {
 	LIFERAY_COMMON_START_TIME=$(date +%s)
 	LIFERAY_COMMON_STEP_FILE=$(mktemp)
 
+	trap 'rm -f "${LIFERAY_COMMON_STEP_FILE}"' EXIT
+
 	declare -A LIFERAY_COMMON_BACKGROUND_PIDS
 
 	if [ -z "${LIFERAY_COMMON_DOWNLOAD_CACHE_DIR}" ]
