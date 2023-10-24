@@ -7,8 +7,6 @@ set -o pipefail
 
 source "$(dirname "$(readlink /proc/$$/fd/255 2>/dev/null)")/_common.sh"
 
-trap 'rm -f "${LIFERAY_COMMON_STEP_FILE}"' EXIT
-
 BASE_DIR="${PWD}"
 
 LIFERAY_COMMON_DOWNLOAD_MAX_TIME="120"
