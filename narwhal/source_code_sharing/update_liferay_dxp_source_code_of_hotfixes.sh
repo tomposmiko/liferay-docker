@@ -38,7 +38,7 @@ function check_ignore_zip_file {
 
 	local file_url="${zip_directory_url}/${hotfix_zip_file}"
 
-	if [[ "x${IGNORE_ZIP_FILES}" =~ x*${hotfix_zip_file}* ]]
+	if echo "${IGNORE_ZIP_FILES}" | grep -q "${hotfix_zip_file}"
 	then
 		lc_log DEBUG "Ignoring '${file_url}'."
 
