@@ -52,6 +52,14 @@ function check_ignore_zip_file {
 
 function check_patch_requirements {
 	local patch_requirements="${1}"
+	local tag_name_new="${2}"
+
+	if [ "${tag_name_new}" == "${TAG_FORCE_COPY}" ]
+	then
+		lc_log DEBUG "Skipping the .patch.requirements check, the tag '${tag_name_new}' will be force copied regardless of the '.patch.requirements' property: '${patch_requirements}'."
+
+		return "${LIFERAY_COMMON_EXIT_CODE_OK}"
+	fi
 
 	if [[ "${patch_requirements}" == +(ga1|u[1-9]*) ]]
 	then
@@ -367,7 +375,7 @@ function process_zip_list_file {
 
 		if [[ ${release_version} == 7* ]]
 		then
-			check_patch_requirements "${PATCH_REQUIREMENTS}" || continue
+			check_patch_requirements "${PATCH_REQUIREMENTS}" "${tag_name_new}" || continue
 		fi
 
 		copy_hotfix_commit "${GIT_REVISION}" "${PRODUCT_VERSION}" "${tag_name_new}"
