@@ -46,6 +46,8 @@ function check_ignore_zip_file {
 	else
 		lc_log DEBUG "The file on '${file_url}' is not on the ignore list."
 
+		echo "${hotfix_zip_file}" >> "${IGNORE_ZIP_FILE_LIST}"
+		
 		return "${LIFERAY_COMMON_EXIT_CODE_BAD}"
 	fi
 }
@@ -295,8 +297,13 @@ function print_help {
 }
 
 function process_argument_ignore_zip_files {
-
-	local ignore_zip_files_persistent_file="$(dirname "$(readlink /proc/$$/fd/255 2>/dev/null)")/ignore_zip_files_persistent.txt"
+	IGNORE_ZIP_FILE_LIST="${LIFERAY_COMMON_DOWNLOAD_CACHE_DIR}/ignore_zip_files.txt"
+	
+	if [ ! -e "${IGNORE_ZIP_FILE_LIST}" ]
+	then
+		cp "${BASE_DIR}"/liferay-docker/narwhal/source_code_sharing/ignore_zip_files_persistent.txt "${IGNORE_ZIP_FILE_LIST}"
+	fi
+	local ignore_zip_files_persistent_file="${IGNORE_ZIP_FILE_LIST}"
 	local ignore_zip_files_persistent_list=$(tr '\n' ',' < "${ignore_zip_files_persistent_file}")
 
 	IGNORE_ZIP_FILES="${IGNORE_ZIP_FILES},${ignore_zip_files_persistent_list}"
