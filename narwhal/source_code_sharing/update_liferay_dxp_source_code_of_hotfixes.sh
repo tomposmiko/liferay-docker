@@ -241,6 +241,8 @@ function get_hotfix_zip_list_file {
 
 	local is_new_file
 
+	trap 'clean_up_zip_list_file "${zip_list_file}"' EXIT
+
 	if [ -f "${zip_list_file}" ]
 	then
 		is_new_file=$(find "${zip_list_file}" -newermt "${ZIP_LIST_RETENTION_TIME} ago")
@@ -380,6 +382,15 @@ function process_zip_list_file {
 
 		copy_hotfix_commit "${GIT_REVISION}" "${PRODUCT_VERSION}" "${tag_name_new}"
 	done
+}
+
+function clean_up_zip_list_file {
+	local zip_list_file="${1}"
+
+	if [ ! -s "${zip_list_file}" ]
+	then
+		rm -f "${zip_list_file}"
+	fi
 }
 
 main "${@}"
