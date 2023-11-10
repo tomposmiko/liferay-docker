@@ -80,7 +80,7 @@ function check_usage {
 	RUN_FETCH_REPOSITORY="true"
 	RUN_PUSH_TO_ORIGIN="true"
 	ZIP_LIST_RETENTION_TIME="1 min"
-	VERSION_INPUT="2023.q3.0 7.4.13"
+	VERSION_INPUT="2023.q3 7.4.13 7.3.10"
 
 	while [ "$#" -gt "0" ]
 	do
@@ -290,7 +290,7 @@ function print_help {
 	echo "    --ignore-zip-files <file1,...,fileN> (optional):        Comma-separated list of files to be not processed (useful if a file is corrupted on the remote server)"
 	echo "    --logdir <logdir> (optional):                           Logging directory, defaults to \"\${PWD}/logs\""
 	echo "    --zip-list-retention-time '<time>' (optinal):           Retention time after the update of the zip list is enforced, defaults to '1 min'"
-	echo "    --version <version> (optional):                         Version to handle, defaults to \"2023.q3.0 7.4.13\""
+	echo "    --version <version> (optional):                         Version to handle, defaults to \"2023.q3 7.4.13 7.3.10\""
 	echo "    --no-fetch (optional):                                  Do not fetch DXP repo"
 	echo "    --no-push (optional):                                   Do not push to origin"
 	echo ""
