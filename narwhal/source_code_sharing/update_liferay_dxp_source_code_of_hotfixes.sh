@@ -22,7 +22,12 @@ function check_if_tag_exists {
 
 	if (git -P tag -l "${tag_name}" | grep -q "[[:alnum:]]")
 	then
-		lc_log DEBUG "The tag '${tag_name}' already exists in the ${repository} repository."
+		lc_log DEBUG "The tag '${tag_name}' already exists in the ${repository} repository. Updating ${IGNORE_ZIP_FILE_LIST}."
+
+		if (! grep "${hotfix_zip_file}" "${IGNORE_ZIP_FILE_LIST}")
+		then
+			echo "${hotfix_zip_file}" >> "${IGNORE_ZIP_FILE_LIST}"
+		fi
 
 		return "${LIFERAY_COMMON_EXIT_CODE_OK}"
 	else
@@ -38,7 +43,7 @@ function check_ignore_zip_file {
 
 	local file_url="${zip_directory_url}/${hotfix_zip_file}"
 
-	if [[ "x${IGNORE_ZIP_FILES}" =~ x*${hotfix_zip_file}* ]]
+	if echo "${IGNORE_ZIP_FILE_LIST}" | grep -q "${hotfix_zip_file}"
 	then
 		lc_log DEBUG "Ignoring '${file_url}'."
 
@@ -303,8 +308,16 @@ function print_help {
 }
 
 function process_argument_ignore_zip_files {
+	IGNORE_ZIP_FILE_LIST="${LIFERAY_COMMON_DOWNLOAD_CACHE_DIR}/ignore_zip_files.txt"
 
-	local ignore_zip_files_persistent_file="$(dirname "$(readlink /proc/$$/fd/255 2>/dev/null)")/ignore_zip_files_persistent.txt"
+	if [ ! -e "${IGNORE_ZIP_FILE_LIST}" ]
+	then
+		lc_log DEBUG "Copying ignore file to ${IGNORE_ZIP_FILE_LIST}"
+
+		cp "${BASE_DIR}"/liferay-docker/narwhal/source_code_sharing/ignore_zip_files_persistent.txt "${IGNORE_ZIP_FILE_LIST}"
+	fi
+
+	local ignore_zip_files_persistent_file="${IGNORE_ZIP_FILE_LIST}"
 	local ignore_zip_files_persistent_list=$(tr '\n' ',' < "${ignore_zip_files_persistent_file}")
 
 	IGNORE_ZIP_FILES="${IGNORE_ZIP_FILES},${ignore_zip_files_persistent_list}"
