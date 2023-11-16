@@ -241,7 +241,7 @@ function get_hotfix_zip_list_file {
 
 	local is_new_file
 
-	trap 'remove_txt_file "${zip_list_file}"' EXIT
+	trap 'clean_up_zip_list_file "${zip_list_file}"' EXIT
 
 	if [ -f "${zip_list_file}" ]
 	then
