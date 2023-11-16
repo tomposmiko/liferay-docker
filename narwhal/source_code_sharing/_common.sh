@@ -77,11 +77,6 @@ function clone_repository {
 		git remote add upstream "git@github.com:liferay/${repository_name}.git"
 	fi
 
-	if (! git remote get-url brianchandotcom &>/dev/null)
-	then
-		git remote add brianchandotcom "git@github.com:brianchandotcom/${repository_name}.git"
-	fi
-
 	git remote --verbose
 }
 
