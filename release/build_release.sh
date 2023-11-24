@@ -27,6 +27,8 @@ function check_usage {
 
 	mkdir -p release-data
 
+	_RELEASE_PROPERTIES_DIR=$(pwd)
+
 	lc_cd release-data
 
 	_RELEASE_ROOT_DIR=$(pwd)
@@ -69,6 +71,8 @@ function main {
 
 	lc_background_run decrement_module_versions
 	lc_background_run update_release_tool_repository
+	lc_background_run set_release_properties
+
 
 	lc_wait
 
@@ -197,6 +201,13 @@ function print_variables {
 
 	echo "${environment}./build_release.sh"
 	echo ""
+}
+
+function set_release_properties {
+	echo -n > "${_RELEASE_PROPERTIES_DIR}"/release.properties
+	echo "build.timestamp=${_BUILD_TIMESTAMP}" >> "${_RELEASE_PROPERTIES_DIR}"/release.properties
+	echo "git.hash.liferay-portal-ee=${LIFERAY_RELEASE_GIT_SHA}" >> "${_RELEASE_PROPERTIES_DIR}"/release.properties
+	echo "git.hash.liferay-docker=${_GIT_SHA}" >> "${_RELEASE_PROPERTIES_DIR}"/release.properties
 }
 
 main
