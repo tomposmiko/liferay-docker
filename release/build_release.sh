@@ -69,6 +69,7 @@ function main {
 
 	lc_background_run decrement_module_versions
 	lc_background_run update_release_tool_repository
+	lc_background_run create_release_properties_file
 
 	lc_wait
 
@@ -197,6 +198,14 @@ function print_variables {
 
 	echo "${environment}./build_release.sh"
 	echo ""
+}
+
+function create_release_properties_file {
+	(
+		echo "build.timestamp=${_BUILD_TIMESTAMP}"
+		echo "git.hash.liferay-portal-ee=${LIFERAY_RELEASE_GIT_SHA}"
+		echo "git.hash.liferay-docker=${_BUILDER_SHA}"
+	) > "${_RELEASE_ROOT_DIR}"/release.properties
 }
 
 main
