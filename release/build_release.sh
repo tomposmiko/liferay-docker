@@ -69,7 +69,6 @@ function main {
 
 	lc_background_run decrement_module_versions
 	lc_background_run update_release_tool_repository
-	lc_background_run create_release_properties_file
 
 	lc_wait
 
@@ -147,6 +146,8 @@ function main {
 		lc_time_run report_patcher_status
 	fi
 
+	lc_time_run create_release_properties_file
+
 	local end_time=$(date +%s)
 
 	local seconds=$((end_time - _BUILD_TIMESTAMP))
@@ -203,7 +204,7 @@ function print_variables {
 function create_release_properties_file {
 	(
 		echo "build.timestamp=${_BUILD_TIMESTAMP}"
-		echo "git.hash.liferay-portal-ee=${LIFERAY_RELEASE_GIT_SHA}"
+		echo "git.hash.liferay-portal-ee=${_GIT_SHA}"
 		echo "git.hash.liferay-docker=${_BUILDER_SHA}"
 	) > "${_RELEASE_ROOT_DIR}"/release.properties
 }
