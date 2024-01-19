@@ -33,7 +33,9 @@ function check_usage {
 		LIFERAY_RELEASE_HOTFIX_ID=${_BUILD_TIMESTAMP}
 	fi
 
-	lc_cd "$(dirname "$(readlink /proc/$$/fd/255 2>/dev/null)")"
+	_RELEASE_TOOL_DIR=$(dirname "$(readlink /proc/$$/fd/255 2>/dev/null)")
+
+	lc_cd "${_RELEASE_TOOL_DIR}"
 
 	mkdir -p release-data
 
@@ -115,6 +117,8 @@ function main {
 		lc_time_run generate_api_source_jar
 
 		lc_time_run generate_poms
+
+		generate_poms_from_scratch
 
 		lc_time_run package_release
 
