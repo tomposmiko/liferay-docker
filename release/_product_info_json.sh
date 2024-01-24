@@ -66,10 +66,12 @@ function get_file_product_info_json {
 	cp -f "${_PROMOTION_DIR}/.product_info.json.tmp" "${LIFERAY_COMMON_LOG_DIR}/.product_info.json-BACKUP.txt"
 
 	sed \
+		-r \
+		-z \
 		-e 's@\r?\n        "@"@g' \
 		-e 's@\r?\n    \}(,)?@\}\1@g' \
 		-e 's@[ ]+"@"@g' \
-		-i -r -z \
+		-i \
 		"${_PROMOTION_DIR}/.product_info.json.tmp"
 }
 

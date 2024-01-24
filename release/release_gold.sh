@@ -5,7 +5,7 @@ source _product_info_json.sh
 source _promotion.sh
 source _publishing.sh
 
-function adjust_product_info {
+function adjust_product_info_json {
 	lc_time_run get_file_product_info_json
 
 	lc_time_run get_file_release_properties
@@ -43,11 +43,11 @@ function check_usage {
 function main {
 	check_usage
 
-	lc_time_run promote_packages
+	#lc_time_run promote_packages
 
-	promote_boms
+	#promote_boms
 
-	adjust_product_info
+	adjust_product_info_json
 }
 
 function print_help {
