@@ -140,8 +140,7 @@ function generate_poms {
 
 	rm -f ./*.pom
 
-	#for pom in release.dxp.api release.dxp.bom release.dxp.bom.compile.only release.dxp.bom.third.party
-	for pom in release.dxp.bom release.dxp.bom.compile.only release.dxp.bom.third.party
+	for pom in release.dxp.api release.dxp.bom release.dxp.bom.compile.only release.dxp.bom.third.party
 	do
 		lc_download "https://repository.liferay.com/nexus/service/local/repositories/liferay-public-releases/content/com/liferay/portal/${pom}/${base_version}/${pom}-${base_version}.pom"
 
