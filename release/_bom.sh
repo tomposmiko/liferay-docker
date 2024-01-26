@@ -124,6 +124,60 @@ function generate_pom_release_dxp_api {
 		"${_RELEASE_TOOL_DIR}/templates/release.dxp.api.pom" > /dev/null
 }
 
+function generate_pom_release_dxp_bom {
+	local pom_file_name="release.dxp.bom-${_DXP_VERSION}-${_BUILD_TIMESTAMP}.FROM_SCRATCH.pom"
+
+	lc_log DEBUG "Generating ${pom_file_name}."
+
+	sed \
+		-e "s/__DXP_VERSION__/${_DXP_VERSION}/" \
+		-e "s/__BUILD_TIMESTAMP__/${_BUILD_TIMESTAMP}/" \
+		-e "w ${pom_file_name}" \
+		"${_RELEASE_TOOL_DIR}/templates/release.dxp.bom.pom.tpl" > /dev/null
+
+	local artifact_list=$(find "${_BUNDLES_DIR}/osgi" "${_BUNDLES_DIR}/tomcat/webapps/ROOT/WEB-INF" -name '*.jar' | sed -e 's/\.jar$//' -e "s@.*/@@" -e "s@-@.@g" | grep -v -E "(\.test\.|\.sample\.|\.gradle\.|\.demo)" | sort)
+
+	find "${_PROJECTS_DIR}/liferay-portal-ee/modules/.releng" -name '*.properties' -print0 | xargs -0 grep "^artifact.url="  > /tmp/artifact_urls.txt
+
+	local id_raw
+
+	for id_raw in $artifact_list
+	do
+		local url_raw=$(grep -E "artifact.url=.*/(com\.liferay\.|)${id_raw}/" /tmp/artifact_urls.txt | cut -f2 -d=)
+
+		for unique_url in $url_raw
+		do
+			local versioned_file_name=$(echo "${unique_url}" | sed "s@.*/@@")
+			local version=$(echo "${versioned_file_name}" | sed -e "s@\.jar\$@@" -e "s@.*${id_raw}-@@")
+			local id_formatted=$(echo "${versioned_file_name}" | sed "s@-${version}.*@@")
+
+			if [[ "$unique_url" == */com/liferay/portal/* ]]
+			then
+				group_id="com.liferay.portal"
+			elif [[ "$unique_url" == */com/liferay/commerce/* ]]
+			then
+				group_id="com.liferay.commerce"
+			else
+				group_id="com.liferay"
+			fi
+
+			(
+				echo "            <dependency>"
+				echo "                <groupId>${group_id}</groupId>"
+				echo "                <artifactId>${id_formatted}</artifactId>"
+				echo "                <version>${version}</version>"
+				echo "           </dependency>"
+			) >> "${pom_file_name}"
+		done
+	done
+
+	(
+		echo "        </dependencies>"
+		echo "    </dependencyManagement>"
+		echo "</project>"
+	) >> "${pom_file_name}"
+}
+
 function generate_poms {
 	if (! echo "${_DXP_VERSION}" | grep -q "q")
 	then
@@ -156,6 +210,8 @@ function generate_poms {
 
 function generate_poms_from_scratch {
 	lc_time_run generate_pom_release_dxp_api
+
+	lc_time_run generate_pom_release_dxp_bom
 }
 
 function _copy_file {
