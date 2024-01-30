@@ -135,9 +135,19 @@ function generate_pom_release_dxp_bom {
 		-e "w ${pom_file_name}" \
 		"${_RELEASE_TOOL_DIR}/templates/release.dxp.bom.pom.tpl" > /dev/null
 
-	local artifact_list=$(find "${_BUNDLES_DIR}/osgi" "${_BUNDLES_DIR}/tomcat/webapps/ROOT/WEB-INF" -name '*.jar' | sed -e 's/\.jar$//' -e "s@.*/@@" -e "s@-@.@g" | grep -v -E "(\.test\.|\.sample\.|\.gradle\.|\.demo)" | sort)
+	local artifact_list=$(
+		find "${_BUNDLES_DIR}/osgi" "${_BUNDLES_DIR}/tomcat/webapps/ROOT/WEB-INF" -name '*.jar' | \
+		sed \
+			-e 's/\.jar$//' \
+			-e "s@.*/@@" \
+			-e "s@-@.@g" | \
+		grep -v -E "(\.demo|\.gradle\.|\.sample\.|\.templates\.|\.test\.)" | \
+		sort
+	)
 
-	find "${_PROJECTS_DIR}/liferay-portal-ee/modules/.releng" -name '*.properties' -print0 | xargs -0 grep "^artifact.url="  > /tmp/artifact_urls.txt
+	find "${_PROJECTS_DIR}/liferay-portal-ee/modules/.releng" -name '*.properties' -print0 | \
+		xargs -0 grep "^artifact.url=" \
+		> /tmp/artifact_urls.txt
 
 	local id_raw
 
@@ -218,7 +228,10 @@ function generate_pom_release_dxp_bom_third_party {
 		"${_RELEASE_TOOL_DIR}/templates/release.dxp.bom.third.party.pom.tpl" > /dev/null
 
 	local jar_list=$(find "${_BUNDLES_DIR}/tomcat/webapps/ROOT/WEB-INF/shielded-container-lib" -name "*.jar")
-	local property_files=("${_PROJECTS_DIR}/liferay-portal-ee/lib/development/dependencies.properties" "${_PROJECTS_DIR}/liferay-portal-ee/lib/portal/dependencies.properties")
+	local property_files=(
+		"${_PROJECTS_DIR}/liferay-portal-ee/lib/development/dependencies.properties"
+		"${_PROJECTS_DIR}/liferay-portal-ee/lib/portal/dependencies.properties"
+	)
 
 	local jar_file
 
