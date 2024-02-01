@@ -42,7 +42,7 @@ function main {
 
 	promote_boms
 
-	update_product_info_json
+	#update_product_info_json
 }
 
 function print_help {
