@@ -5,37 +5,7 @@ source _product_info_json.sh
 source _promotion.sh
 source _publishing.sh
 
-RELEASE_PROPERTIES_FILE="release-data/release.properties"
 LIFERAY_RELEASE_FORK_NAME=${LIFERAY_RELEASE_FORK_NAME:="liferay/liferay-portal.ee"}
-
-function tag_release {
-	if [ -n "${LIFERAY_RELEASE_GITHUB_PAT}" ]
-	then
-		if ( ! curl --data "{
-				\"message\":\"\",
-				\"object\":\"$(lc_get_property ${RELEASE_PROPERTIES_FILE} git.hash.liferay-portal-ee)\",
-				\"tag\":\"${LIFERAY_RELEASE_VERSION}\",
-				\"type\":\"commit\"
-				}" \
-			--fail \
-			--header "Accept: application/vnd.github+json" \
-			--header "Authorization: Bearer ${LIFERAY_RELEASE_GITHUB_PAT}" \
-			--header "X-GitHub-Api-Version: 2022-11-28" \
-			--location https://api.github.com/repos/"${LIFERAY_RELEASE_FORK_NAME}"/git/tags \
-			--retry 3 \
-			--request POST \
-			--max-time 10 \
-			--silent
-			)
-		then
-			lc_log ERROR "Unable to access the requested URL."
-
-			return "${LIFERAY_COMMON_EXIT_CODE_BAD}"
-		fi
-	else
-		return "${LIFERAY_COMMON_EXIT_CODE_SKIPPED}"
-	fi
-}
 
 function check_usage {
 	if [ -z "${LIFERAY_RELEASE_RC_BUILD_TIMESTAMP}" ] || [ -z "${LIFERAY_RELEASE_VERSION}" ]
@@ -77,25 +47,24 @@ function main {
 	promote_boms
 
 	update_product_info_json
-
 }
 
 function print_help {
-    echo "Usage: (LIFERAY_RELEASE_FORK_NAME=<username/repository_name>) LIFERAY_RELEASE_GITHUB_PAT=<Personal Access Token> LIFERAY_RELEASE_RC_BUILD_TIMESTAMP=<timestamp> LIFERAY_RELEASE_VERSION=<version> ${0}"
-    echo ""
-    echo "The script reads the following environment variables:"
-    echo ""
-	echo "    LIFERAY_RELEASE_FORK_NAME (optional): The repository owner's git username, defaults to 'liferay' and the repository's name"
-    echo "    LIFERAY_RELEASE_GITHUB_PAT: The user's Personal Access Token"
-	echo "    LIFERAY_RELEASE_NEXUS_REPOSITORY_PASSWORD: Nexus user's password"
-	echo "    LIFERAY_RELEASE_NEXUS_REPOSITORY_USER: Nexus user with the right to upload BOM files"
-	echo "    LIFERAY_RELEASE_PRODUCT_NAME (optional): Set to \"portal\" for CE. The default is \"DXP\"."
-    echo "    LIFERAY_RELEASE_RC_BUILD_TIMESTAMP: Timestamp of the build to publish"
-    echo "    LIFERAY_RELEASE_VERSION: DXP version of the release to publish"
+	echo "Usage: LIFERAY_RELEASE_RC_BUILD_TIMESTAMP=<timestamp> LIFERAY_RELEASE_VERSION=<version> ${0}"
 	echo ""
-    echo "Example: LIFERAY_RELEASE_FORK_NAME=<username/repository_name> LIFERAY_RELEASE_GITHUB_PAT=<personal access token> LIFERAY_RELEASE_RC_BUILD_TIMESTAMP=1695892964 LIFERAY_RELEASE_VERSION=2023.q3.0 ${0}"
+	echo "The script reads the following environment variables:"
+	echo ""
+	echo "    LIFERAY_RELEASE_FORK_NAME (optional): The repository owner's git username, defaults to 'liferay' and the repository's name"
+	echo "    LIFERAY_RELEASE_GITHUB_PAT (optional): The user's Personal Access Token"
+	echo "    LIFERAY_RELEASE_NEXUS_REPOSITORY_PASSWORD (optional): Nexus user's password"
+	echo "    LIFERAY_RELEASE_NEXUS_REPOSITORY_USER (optional): Nexus user with the right to upload BOM files"
+	echo "    LIFERAY_RELEASE_PRODUCT_NAME (optional): Set to \"portal\" for CE. The default is \"DXP\"."
+	echo "    LIFERAY_RELEASE_RC_BUILD_TIMESTAMP: Timestamp of the build to publish"
+	echo "    LIFERAY_RELEASE_VERSION: DXP version of the release to publish"
+	echo ""
+	echo "Example: LIFERAY_RELEASE_RC_BUILD_TIMESTAMP=1695892964 LIFERAY_RELEASE_VERSION=2023.q3.0 ${0}"
 
-    exit "${LIFERAY_COMMON_EXIT_CODE_HELP}"
+	exit "${LIFERAY_COMMON_EXIT_CODE_HELP}"
 }
 
 function promote_boms {
@@ -114,17 +83,38 @@ function promote_packages {
 		return "${LIFERAY_COMMON_EXIT_CODE_SKIPPED}"
 	fi
 
-	ssh -i lrdcom-vm-1 root@lrdcom-vm-1 cp -a "/www/releases.liferay.com/${LIFERAY_RELEASE_PRODUCT_NAME}/release-candidates/${_ARTIFACT_RC_VERSION}" "/www/releases.liferay.com/dxp/${_DXP_VERSION}"
+	ssh -i lrdcom-vm-1 root@lrdcom-vm-1 cp -a "/www/releases.liferay.com/${LIFERAY_RELEASE_PRODUCT_NAME}/release-candidates/${_ARTIFACT_RC_VERSION}" "/www/releases.liferay.com/dxp/${_PRODUCT_VERSION}"
 }
 
-function update_product_info_json {
-	lc_time_run get_file_product_info_json
+function tag_release {
+	if [ -n "${LIFERAY_RELEASE_GITHUB_PAT}" ]
+	then
+		if ( ! curl --data "{
+				\"message\":\"\",
+				\"object\":\"$(lc_get_property release-data/release.properties git.hash.liferay-portal-ee)\",
+				\"tag\":\"${LIFERAY_RELEASE_VERSION}\",
+				\"type\":\"commit\"
+				}" \
+			--fail \
+			--header "Accept: application/vnd.github+json" \
+			--header "Authorization: Bearer ${LIFERAY_RELEASE_GITHUB_PAT}" \
+			--header "X-GitHub-Api-Version: 2022-11-28" \
+			--location https://api.github.com/repos/"${LIFERAY_RELEASE_FORK_NAME}"/git/tags \
+			--retry 3 \
+			--request POST \
+			--max-time 10 \
+			--silent
+			)
+		then
+			lc_log ERROR "Unable to access the requested URL."
 
-	lc_time_run get_file_release_properties
+			return "${LIFERAY_COMMON_EXIT_CODE_BAD}"
+		fi
+	else
+		lc_log ERROR "Personal Access Token was not declared"
 
-	lc_time_run generate_product_info_json
-
-	lc_time_run upload_product_info_json
+		return "${LIFERAY_COMMON_EXIT_CODE_SKIPPED}"
+	fi
 }
 
 main
