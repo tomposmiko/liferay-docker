@@ -74,12 +74,17 @@ function promote_boms {
 function promote_packages {
 	if (ssh root@lrdcom-vm-1 ls -d "/www/releases.liferay.com/${LIFERAY_RELEASE_PRODUCT_NAME}/${_PRODUCT_VERSION}" | grep -q "${_PRODUCT_VERSION}" &>/dev/null)
 	then
-		lc_log ERROR "Release was already published."
+		if [ "${FORCE_PROMOTE}" == "true" ]
+		then
+			lc_log INFO "Forcibly promoting the packages."
+		else
+			lc_log ERROR "The packages were already promoted to the public release directory."
 
-		return "${LIFERAY_COMMON_EXIT_CODE_SKIPPED}"
+			return "${LIFERAY_COMMON_EXIT_CODE_SKIPPED}"
+		fi
 	fi
 
-	ssh root@lrdcom-vm-1 cp -a "/www/releases.liferay.com/${LIFERAY_RELEASE_PRODUCT_NAME}/release-candidates/${_ARTIFACT_RC_VERSION}" "/www/releases.liferay.com/dxp/${_PRODUCT_VERSION}"
+	ssh root@lrdcom-vm-1 cp -a -f "/www/releases.liferay.com/${LIFERAY_RELEASE_PRODUCT_NAME}/release-candidates/${_ARTIFACT_RC_VERSION}" "/www/releases.liferay.com/dxp/${_PRODUCT_VERSION}"
 }
 
 main
