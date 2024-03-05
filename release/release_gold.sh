@@ -105,7 +105,19 @@ function tag_release {
 		repository=liferay-portal
 	fi
 
-	if (! curl
+	if (curl \
+			"https://api.github.com/repos/liferay/${repository}/git/refs/tags/${LIFERAY_RELEASE_VERSION}" \
+			--header "Accept: application/vnd.github+json" \
+			--header "Authorization: Bearer ${LIFERAY_RELEASE_GITHUB_PAT}" \
+			--header "X-GitHub-Api-Version: 2022-11-28" \
+			| grep -q "${LIFERAY_RELEASE_VERSION}")
+	then
+		lc_log ERROR "The ${LIFERAY_RELEASE_VERSION} tag already exists."
+
+		return "${LIFERAY_COMMON_EXIT_CODE_SKIPPED}"
+	fi
+
+	if (curl \
 			"https://api.github.com/repos/liferay/${repository}/git/tags" \
 			--data-raw '
 				{
@@ -123,6 +135,8 @@ function tag_release {
 			--retry 3 \
 			--silent)
 	then
+		lc_log INFO "The ${LIFERAY_RELEASE_VERSION} tag has been added"
+	else
 		lc_log ERROR "Unable to tag release."
 
 		return "${LIFERAY_COMMON_EXIT_CODE_SKIPPED}"
