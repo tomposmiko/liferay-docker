@@ -58,6 +58,123 @@ function check_usage {
 	LIFERAY_COMMON_LOG_DIR="${_BUILD_DIR}"
 }
 
+function execute_hotfix {
+	lc_time_run prepare_release_dir
+
+	lc_time_run copy_release_info_date
+
+	lc_time_run set_up_profile
+
+	lc_time_run add_hotfix_testing_code
+
+	lc_time_run set_hotfix_name
+
+	lc_time_run add_licensing
+
+	lc_time_run compile_product
+
+	lc_time_run obfuscate_licensing
+
+	lc_time_run build_product
+
+	lc_time_run clean_up_ignored_dxp_modules
+
+	lc_time_run clean_up_ignored_dxp_plugins
+
+	lc_time_run add_portal_patcher_properties_jar
+
+	lc_time_run create_hotfix
+
+	lc_time_run calculate_checksums
+
+	lc_time_run create_documentation
+
+	lc_time_run sign_hotfix
+
+	lc_time_run package_hotfix
+
+	lc_time_run upload_hotfix
+
+	lc_time_run report_patcher_status
+}
+
+function execute_nightly {
+	lc_time_run update_release_info_date
+
+	lc_time_run set_up_profile
+
+	lc_time_run add_licensing
+
+	lc_time_run compile_product
+
+	lc_time_run obfuscate_licensing
+
+	lc_time_run build_product
+
+	lc_background_run copy_copyright
+	lc_background_run deploy_elasticsearch_sidecar
+	lc_background_run clean_up_ignored_dxp_modules
+	lc_background_run clean_up_ignored_dxp_plugins
+
+	lc_wait
+
+	lc_time_run warm_up_tomcat
+
+	lc_time_run install_patching_tool
+
+	lc_time_run package_release
+
+	lc_time_run upload_release
+}
+
+function execute_release {
+	lc_time_run update_release_info_date
+
+	lc_time_run set_up_profile
+
+	lc_time_run add_licensing
+
+	lc_time_run compile_product
+
+	lc_time_run obfuscate_licensing
+
+	lc_time_run build_product
+
+	lc_background_run build_sql
+	lc_background_run copy_copyright
+	lc_background_run deploy_elasticsearch_sidecar
+	lc_background_run clean_up_ignored_dxp_modules
+	lc_background_run clean_up_ignored_dxp_plugins
+
+	lc_wait
+
+	lc_time_run warm_up_tomcat
+
+	lc_time_run install_patching_tool
+
+	lc_time_run generate_api_jars
+
+	lc_time_run generate_api_source_jar
+
+	lc_time_run generate_poms
+
+	generate_poms_from_scratch
+
+	lc_time_run package_release
+
+	lc_time_run package_boms
+
+	lc_time_run generate_checksum_files
+
+	lc_time_run generate_release_properties_file
+
+	lc_time_run generate_release_notes
+
+	lc_time_run upload_boms xanadu
+
+	lc_time_run upload_release
+}
+
 function main {
 	export ANT_OPTS="-Xmx10G"
 
@@ -91,92 +208,20 @@ function main {
 
 	lc_time_run set_product_version
 
-	if [ "${LIFERAY_RELEASE_OUTPUT}" != "hotfix" ]
-	then
-		lc_time_run update_release_info_date
+	case "${LIFERAY_RELEASE_OUTPUT}" in
+		"hotfix")
+			execute_hotfix
 
-		lc_time_run set_up_profile
+			;;
+		"nightly")
+			execute_nightly
 
-		lc_time_run add_licensing
+			;;
+		*)
+			execute_release
 
-		lc_time_run compile_product
-
-		lc_time_run obfuscate_licensing
-
-		lc_time_run build_product
-
-		lc_background_run build_sql
-		lc_background_run copy_copyright
-		lc_background_run deploy_elasticsearch_sidecar
-		lc_background_run clean_up_ignored_dxp_modules
-		lc_background_run clean_up_ignored_dxp_plugins
-
-		lc_wait
-
-		lc_time_run warm_up_tomcat
-
-		lc_time_run install_patching_tool
-
-		lc_time_run generate_api_jars
-
-		lc_time_run generate_api_source_jar
-
-		lc_time_run generate_poms
-
-		generate_poms_from_scratch
-
-		lc_time_run package_release
-
-		lc_time_run package_boms
-
-		lc_time_run generate_checksum_files
-
-		lc_time_run generate_release_properties_file
-
-		lc_time_run generate_release_notes
-
-		lc_time_run upload_boms xanadu
-
-		lc_time_run upload_release
-	else
-		lc_time_run prepare_release_dir
-
-		lc_time_run copy_release_info_date
-
-		lc_time_run set_up_profile
-
-		lc_time_run add_hotfix_testing_code
-
-		lc_time_run set_hotfix_name
-
-		lc_time_run add_licensing
-
-		lc_time_run compile_product
-
-		lc_time_run obfuscate_licensing
-
-		lc_time_run build_product
-
-		lc_time_run clean_up_ignored_dxp_modules
-
-		lc_time_run clean_up_ignored_dxp_plugins
-
-		lc_time_run add_portal_patcher_properties_jar
-
-		lc_time_run create_hotfix
-
-		lc_time_run calculate_checksums
-
-		lc_time_run create_documentation
-
-		lc_time_run sign_hotfix
-
-		lc_time_run package_hotfix
-
-		lc_time_run upload_hotfix
-
-		lc_time_run report_patcher_status
-	fi
+			;;
+	esac
 
 	local end_time=$(date +%s)
 
@@ -206,7 +251,7 @@ function print_help {
 	echo "    LIFERAY_RELEASE_HOTFIX_SIGNATURE_KEY_PASSWORD (optional): Password to unlock the hotfix signing key"
 	echo "    LIFERAY_RELEASE_HOTFIX_TEST_SHA (optional): Git commit to cherry pick to build a test hotfix"
 	echo "    LIFERAY_RELEASE_HOTFIX_TEST_TAG (optional): Tag name of the hotfix testing code in the liferay-portal-ee repository"
-	echo "    LIFERAY_RELEASE_OUTPUT (optional): Set this to \"hotfix\" to build a hotfix instead of a release"
+	echo "    LIFERAY_RELEASE_OUTPUT (optional): Set this to \"hotfix\" to build a hotfix or to \"nightly\" to build nightly bundles instead of a release"
 	echo "    LIFERAY_RELEASE_PATCHER_REQUEST_KEY (optional): Request key from Patcher that is used to report back statuses to Patcher"
 	echo "    LIFERAY_RELEASE_PATCHER_USER_ID (optional): User ID of the patcher user who started the build"
 	echo "    LIFERAY_RELEASE_PRODUCT_NAME (optional): Set to \"portal\" for CE. The default is \"DXP\"."

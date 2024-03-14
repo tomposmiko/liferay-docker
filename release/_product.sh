@@ -314,6 +314,11 @@ function set_product_version {
 	if (echo "${version_display_name}" | grep -iq "q")
 	then
 		_PRODUCT_VERSION="${version_display_name,,}"
+	elif [ "${LIFERAY_RELEASE_OUTPUT}" = "nightly" ]
+	then
+		local bug_fix=$(lc_get_property release.properties "release.info.version.bug.fix[${branch}-private]")
+
+		_PRODUCT_VERSION="${major_version}.${minor_version}.${bug_fix}.nightly"
 	else
 		local bug_fix=$(lc_get_property release.properties "release.info.version.bug.fix[${branch}-private]")
 		local trivial=$(lc_get_property release.properties "release.info.version.trivial")
