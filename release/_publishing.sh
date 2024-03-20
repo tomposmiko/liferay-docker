@@ -130,6 +130,11 @@ function upload_release {
 
 	echo "# Uploaded" > ../output.md
 
+	if [ "${LIFERAY_RELEASE_OUTPUT}" = "nightly" ]
+	then
+		ssh root@lrdcom-vm-1 mkdir -p "/www/releases.liferay.com/${LIFERAY_RELEASE_PRODUCT_NAME}/nightly"
+	fi
+
 	ssh root@lrdcom-vm-1 mkdir -p "/www/releases.liferay.com/${LIFERAY_RELEASE_PRODUCT_NAME}/release-candidates/${_PRODUCT_VERSION}-${_BUILD_TIMESTAMP}"
 
 	for file in * .*
@@ -142,9 +147,16 @@ function upload_release {
 
 			if [ "${LIFERAY_RELEASE_OUTPUT}" = "nightly" ]
 			then
-				scp "${file}" root@lrdcom-vm-1:"/www/releases.liferay.com/${LIFERAY_RELEASE_PRODUCT_NAME}//nightly/${_PRODUCT_VERSION}-${_BUILD_TIMESTAMP}"
+				if (scp "${file}" root@lrdcom-vm-1:"/www/releases.liferay.com/${LIFERAY_RELEASE_PRODUCT_NAME}/nightly/${_PRODUCT_VERSION}-${_BUILD_TIMESTAMP}")
+				then
+					echo " - https://releases.liferay.com/${LIFERAY_RELEASE_PRODUCT_NAME}/nightly/${file}" >> ../output.md
 
-				echo " - https://releases.liferay.com/${LIFERAY_RELEASE_PRODUCT_NAME}/nightly/${file}" >> ../output.md
+					ssh root@lrdcom-vm-1 ln -s "/www/releases.liferay.com/${LIFERAY_RELEASE_PRODUCT_NAME}/nightly/${_PRODUCT_VERSION}-${_BUILD_TIMESTAMP}" "/www/releases.liferay.com/${LIFERAY_RELEASE_PRODUCT_NAME}/nightly/${_PRODUCT_VERSION}"
+
+					local file_uploaded=true
+				else
+					exit "${LIFERAY_COMMON_EXIT_CODE_BAD}"
+				fi
 			fi
 
 			scp "${file}" root@lrdcom-vm-1:"/www/releases.liferay.com/${LIFERAY_RELEASE_PRODUCT_NAME}/release-candidates/${_PRODUCT_VERSION}-${_BUILD_TIMESTAMP}"
@@ -152,6 +164,11 @@ function upload_release {
 			echo " - https://releases.liferay.com/${LIFERAY_RELEASE_PRODUCT_NAME}/release-candidates/${_PRODUCT_VERSION}-${_BUILD_TIMESTAMP}/${file}" >> ../output.md
 		fi
 	done
+
+	if [ "${file_uploaded}" = true ]
+	then
+		ssh root@lrdcom-vm-1 find "/www/releases.liferay.com/${LIFERAY_RELEASE_PRODUCT_NAME}/nightly/" -type f ! -name "*${_BUILD_TIMESTAMP}*" -delete
+	fi
 }
 
 function _upload_to_nexus {
