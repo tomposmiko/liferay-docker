@@ -1,0 +1,65 @@
+pipeline {
+	agent {
+		label '!release-1&&!mac-mini-1'
+	}
+
+	environment {
+		GCP_SERVICE_ACCOUNT = credentials('gcp.json (release-builder-gcp-service-account)')
+	}
+
+	stages {
+		stage ('Prepare environment') {
+			steps {
+				sh '''
+				gcloud auth  activate-service-account "release-builder@mirrors-20240206-1.iam.gserviceaccount.com" --key-file="${GCP_SERVICE_ACCOUNT}"
+				'''
+			}
+		}
+
+		stage ('Run build_release script') {
+			steps {
+				sh '''
+				cd release
+				rm -fr output
+				mkdir -p output
+				rm -rf release-data/promotions
+				export LIFERAY_COMMON_LOG_DIR=${WORKSPACE}/release/output
+
+				unset JENKINS_HOME
+				export LIFERAY_RELEASE_UPLOAD=false
+				export LIFERAY_COMMON_DOWNLOAD_SKIP_CACHE=true
+
+				export LIFERAY_RELEASE_GIT_REF=master
+				export LIFERAY_RELEASE_HOTFIX_TEST_SHA=nightly
+
+				./build_release.sh
+				'''
+			}
+		}
+
+	}
+
+	post {
+		always {
+			archiveArtifacts artifacts: 'release/release-data/output/*.txt'
+		}
+
+		failure {
+			emailext body: '''${SCRIPT, template="groovy-html.template"}''',
+			mimeType: 'text/html',
+			recipientProviders: [[$class: 'CulpritsRecipientProvider']],
+			replyTo: "gyula.pete@liferay.com szantina.szanto@liferay.com",
+			subject: "[SCS] [${BUILD_NUMBER}] Build failed",
+			to: "gyula.pete@liferay.com szantina.szanto@liferay.com"
+		}
+
+		fixed {
+			emailext body: 'Back to normal: ${BUILD_URL}',
+			mimeType: 'text/html',
+			recipientProviders: [[$class: 'CulpritsRecipientProvider']],
+			replyTo: "gyula.pete@liferay.com szantina.szanto@liferay.com",
+			subject: "[SCS] [${BUILD_NUMBER}] Back to normal",
+			to: "gyula.pete@liferay.com szantina.szanto@liferay.com"
+		}
+	}
+}
